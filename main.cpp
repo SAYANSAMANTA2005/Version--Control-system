@@ -73,38 +73,32 @@ public:
 
 int main() {
 
-    VersionHistory vh(5);
-
-    vh.pushState(10);
-    vh.pushState(20);
-    vh.pushState(30);
-    vh.pushState(40);
-    vh.pushState(50);
-
-    vh.printHistory();
-
-    cout << "\nUndo\n";
-    vh.undo();
-
-    vh.printHistory();
-
-    cout << "\nUndo\n";
-    vh.undo();
-
-    vh.printHistory();
-
-    cout << "\nCurrent index = "
-         << vh.currentState() << "\n";
-
-    cout << "\nAdd 35 after undo\n";
-    vh.pushState(35);
-
-    vh.printHistory();
-
-    cout << "\nAdd 45\n";
-    vh.pushState(45);
-
-    vh.printHistory();
+    VersionHistory vh(500);
+    cout<<"Version History: "<<endl;
+    cout<<" Enter the State(Number) U want to push in the History: "<<endl;
+    int state;cin>>state;
+    vh.pushState(state);
+    while(true){
+        cout<<" If u Want to push more state in the History then press 1 else if u want to undo the history press 0: "<<endl;
+        int choice;
+        cin>>choice;
+        if(choice==1){
+        cout<<" Enter the State(Number) U want to push in the History: "<<endl;
+        cin>>state;
+        vh.pushState(state);
+      }
+      else if(choice==0){
+        cout<<"\nUndo\n";
+        if(!vh.undo()){
+          cout<<"No more states to undo\n";
+        }
+        
+      }
+      else{
+        break;
+      }
+     vh.printHistory();
+    }
 
     return 0;
 }
