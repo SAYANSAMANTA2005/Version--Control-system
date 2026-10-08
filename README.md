@@ -1,139 +1,252 @@
-# Version History — Assumptions, Edge Cases & Bugs
+# Text Version Control System
 
-## Assumptions
+A basic command-line Version Control System for storing text states,
+viewing history, and performing undo operations.
 
-* History is **linear**; branching/merging is not supported.
-* `cursor` represents the index of the **currently active state**.
-* `Ctrl+Z` is represented by calling `undo()`.
-* Adding a new state after `undo()` deletes all states ahead of the cursor.
-* `maxHistory` represents the maximum number of states stored.
-* When the limit is exceeded, the **oldest state is removed**.
-* States are currently represented only by `int`.
-* History exists only in memory; there is no disk persistence.
+## Current Project State
 
-## Possible Edge Cases
+The project currently provides a simple CLI-based text history system.
 
-### 1. Undo at the oldest state
+### Current Features
 
-```text
-[10, 20, 30]
- ^
-cursor
+-   Accepts text input from the user through the terminal.
+-   Stores each entered text as a `State`.
+-   Each state has:
+    -   A state ID
+    -   The text associated with that state
+-   Maintains the states in an in-memory `vector<State>`.
+-   Displays the current text history.
+-   Supports an **Undo** operation.
+-   Saves the current history to `history.txt` when the program exits.
+-   Saves the current history index to `CurrentIndex.txt`.
+-   Loads the previous history when the program starts.
+-   Restores the previous current index after restarting the program.
+-   Uses a batch script to compile and run the application.
+
+## How to Run
+
+The first line of this README is the command required to run the project
+from PowerShell:
+
+``` powershell
+.\Script.bat
 ```
 
-Calling `undo()` should do nothing and return `false`.
+The script:
 
-### 2. Undo with no states
+1.  Compiles `Text.cpp`.
+2.  Uses C++17.
+3.  Creates `Text.exe`.
+4.  Runs the executable.
 
-```text
-history = []
-cursor = -1
+## Current Project Structure
+
+``` text
+Version-Control-system/
+│
+├── .vscode/
+│
+├── Text.cpp
+├── Text.exe
+├── Script.bat
+│
+├── history.txt
+├── CurrentIndex.txt
+│
+├── main.cpp
+├── main.exe
+│
+├── README.md
+└── .gitignore
 ```
 
-Calling `undo()` should safely return `false`.
+## How the Current System Works
 
-### 3. New state after undo
+The basic flow is:
 
-```text
-[10, 20, 30, 40, 50]
-         ^
-       cursor
+``` text
+User enters text
+       ↓
+Create State
+       ↓
+Store State in vector<State>
+       ↓
+Increase current index
+       ↓
+Save history when program exits
 ```
 
-Adding `35` produces:
+### State
 
-```text
-[10, 20, 30, 35]
-                  ^
+The current state structure is:
+
+``` cpp
+struct State {
+    int id;
+    string text;
+};
 ```
 
-States `40` and `50` are discarded.
+### In-Memory History
 
-### 4. History limit = 1
+States are stored using:
 
-Only the latest state can be retained:
-
-```text
-[10]
-
-push(20)
-
-[20]
+``` cpp
+vector<State> history;
 ```
 
-### 5. Invalid history size
+The current index is tracked using:
 
-`maxHistory <= 0` is currently not explicitly handled and should be validated.
-
-## Possible Bugs / Improvements
-
-### 1. `maxHistory <= 0`
-
-Currently, a value such as:
-
-```cpp
-VersionHistory vh(0);
+``` cpp
+int currIndex;
 ```
 
-can cause incorrect cursor/history behavior.
+## Persistence
 
-**Fix:** Reject zero or negative capacity in the constructor.
+The project currently uses two files for persistence.
 
-### 2. `currentState()` on empty history
+### `history.txt`
 
-Currently it returns:
+Stores the text of each state, one state per line.
 
-```text
--1
+Example:
+
+``` text
+Hello
+Hello World
+Hello World!
 ```
 
-This is intentional to represent "no current state", but this behavior should be documented or replaced with a safer API later.
+### `CurrentIndex.txt`
 
-### 3. `vector::erase()`
+Stores the current history index.
 
-Removing the first element:
+Example:
 
-```cpp
-history.erase(history.begin());
+``` text
+3
 ```
 
-takes **O(n)** time because the remaining elements must be shifted.
+When the program starts:
 
-This is acceptable for the current simple implementation, but can later be replaced with a **deque/ring buffer** for efficient bounded history.
-
-### 4. Full state storage
-
-Currently every state is stored completely:
-
-```text
-10 → 20 → 30 → 40 → 50
+``` text
+CurrentIndex.txt
+       ↓
+   Load index
+       ↓
+history.txt
+       ↓
+Load text states
+       ↓
+Restore history
 ```
 
-No actual **diff/delta representation** is implemented yet.
+## Current Undo Behaviour
 
-A future version can store:
+When the user selects the Undo option:
 
-```text
-Initial State
-    ↓
- Diff 1
-    ↓
- Diff 2
-    ↓
- Diff 3
+``` text
+State 0 → State 1 → State 2
+                       ↑
+                    current
 ```
 
-to reduce storage requirements for large application states.
+Undo moves the current index backward and removes the last state from
+the current in-memory history.
 
-## Current Scope
+For example:
 
-The current implementation intentionally supports only:
+``` text
+Before Undo:
 
-```text
-pushState()
-undo()
-currentState()
-printHistory()
+State 0 → State 1 → State 2
+
+After Undo:
+
+State 0 → State 1
 ```
 
-No redo, branching, persistence, compression, or distributed version control features are implemented.
+### Important Current Limitation
+
+The current implementation uses:
+
+``` cpp
+history.pop_back();
+```
+
+during Undo.
+
+Therefore, the undone state is currently removed from the in-memory
+history. A proper redo mechanism has not yet been implemented.
+
+## Current Limitations
+
+The current implementation is an early prototype and does not yet
+provide all features of a complete Version Control System.
+
+Currently:
+
+-   Redo is not implemented.
+-   Undo removes the latest state instead of only moving a current-state
+    pointer.
+-   States store complete text rather than differences/diffs.
+-   Branching is not implemented.
+-   Checkout is not implemented.
+-   Merge is not implemented.
+-   There is no commit/message system.
+-   Text input currently supports one line at a time.
+-   History is saved when the program exits rather than after every
+    state change.
+-   Each version is not currently stored as an individual version
+    object/file.
+-   There is no conflict-resolution mechanism.
+
+## Planned Improvements
+
+The planned development path is:
+
+``` text
+Current Prototype
+       ↓
+Improve Undo
+       ↓
+Redo
+       ↓
+Better State Management
+       ↓
+Commit System
+       ↓
+Persistent Version Storage
+       ↓
+Diff-Based Storage
+       ↓
+Version Graph / DAG
+       ↓
+Branching
+       ↓
+Checkout
+       ↓
+Merge
+```
+
+## Long-Term Goal
+
+The goal of this project is to build a lightweight, educational Version
+Control System specialized for text.
+
+The system is intended to demonstrate concepts such as:
+
+-   State management
+-   History tracking
+-   Undo/Redo
+-   Persistence
+-   File I/O
+-   Versioning
+-   Diff storage
+-   Branching
+-   Version graphs
+-   Checkout
+-   Merge
+
+The project will gradually evolve from the current snapshot-based
+prototype into a more complete Git-like version-control system for text.
